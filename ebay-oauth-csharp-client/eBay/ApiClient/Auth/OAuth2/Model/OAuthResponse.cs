@@ -23,6 +23,6 @@ namespace eBay.ApiClient.Auth.OAuth2.Model
     {
         public OAuthToken AccessToken { get; set; }
         public OAuthToken RefreshToken { get; set; }
-        public String ErrorMessage { get; set; }
+        public string ErrorMessage { get; set; }
     }
 }

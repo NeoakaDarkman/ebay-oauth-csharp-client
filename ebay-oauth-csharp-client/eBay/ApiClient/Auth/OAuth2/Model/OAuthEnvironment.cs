@@ -24,32 +24,32 @@ public class OAuthEnvironment
         public static readonly OAuthEnvironment PRODUCTION = new OAuthEnvironment("api.ebay.com", "https://auth.ebay.com/oauth2/authorize", "https://api.ebay.com/identity/v1/oauth2/token");
         public static readonly OAuthEnvironment SANDBOX = new OAuthEnvironment("api.sandbox.ebay.com", "https://auth.sandbox.ebay.com/oauth2/authorize", "https://api.sandbox.ebay.com/identity/v1/oauth2/token");
 
-        private readonly String configIdentifier;
-        private readonly String webEndpoint;
-        private readonly String apiEndpoint;
+        private readonly string configIdentifier;
+        private readonly string webEndpoint;
+        private readonly string apiEndpoint;
 
-        private OAuthEnvironment(String configIdentifier, String webEndpoint, String apiEndpoint) {
+        private OAuthEnvironment(string configIdentifier, string webEndpoint, string apiEndpoint) {
             this.configIdentifier = configIdentifier;
             this.webEndpoint = webEndpoint;
             this.apiEndpoint = apiEndpoint;
         }
 
-        public String ConfigIdentifier() {
+        public string ConfigIdentifier() {
             return configIdentifier;
         }
 
-        public String WebEndpoint() {
+        public string WebEndpoint() {
             return webEndpoint;
         }
 
-        public String ApiEndpoint() {
+        public string ApiEndpoint() {
             return apiEndpoint;
         }
 
         /*
          * Lookup by ConfigIdentifier
          */
-        public static OAuthEnvironment LookupByConfigIdentifier(String configIdentifier) {
+        public static OAuthEnvironment LookupByConfigIdentifier(string configIdentifier) {
             if(PRODUCTION.ConfigIdentifier().Equals(configIdentifier)) 
             {
                 return PRODUCTION;

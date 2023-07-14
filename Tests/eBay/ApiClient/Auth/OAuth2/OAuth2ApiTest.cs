@@ -26,21 +26,22 @@ using System.Threading;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Firefox;
 using System.Collections.Specialized;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Web;
-using YamlDotNet.RepresentationModel;
 
 namespace eBay.ApiClient.Auth.OAuth2
 {
     public class OAuth2ApiTest : IDisposable
     {
         private OAuth2Api oAuth2Api = new OAuth2Api();
-        private readonly IList<String> scopes = new List<String>()
+        private readonly IList<string> scopes = new List<string>()
             {
                 "https://api.ebay.com/oauth/api_scope/buy.marketing",
                 "https://api.ebay.com/oauth/api_scope"
             };
 
-        private readonly IList<String> userScopes = new List<String>()
+        private readonly IList<string> userScopes = new List<string>()
             {
                 "https://api.ebay.com/oauth/api_scope/commerce.catalog.readonly",
                 "https://api.ebay.com/oauth/api_scope/buy.shopping.cart"
@@ -94,12 +95,13 @@ namespace eBay.ApiClient.Auth.OAuth2
 
         [Fact]
         public void GenerateUserAuthorizationUrl_Success() {
-            String yamlFile = @"../../../ebay-config-sample.yaml";
-            StreamReader streamReader = new StreamReader(yamlFile);
-            CredentialUtil.Load(streamReader);
+            string jsonFile = @"../../../ebay-config-sample.json";
+            var fi = new FileInfo(jsonFile);
+            var fs = fi.Open(FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
+            CredentialUtil.Load(fs);
 
-            String state = "State";
-            String authorizationUrl = oAuth2Api.GenerateUserAuthorizationUrl(OAuthEnvironment.PRODUCTION, userScopes, state);
+            string state = "State";
+            string authorizationUrl = oAuth2Api.GenerateUserAuthorizationUrl(OAuthEnvironment.PRODUCTION, userScopes, state);
             Console.WriteLine("======================GenerateUserAuthorizationUrl======================");
             Console.WriteLine("AuthorizationUrl => " + authorizationUrl);
             Assert.NotNull(authorizationUrl);
@@ -121,7 +123,7 @@ namespace eBay.ApiClient.Auth.OAuth2
         public void ExchangeCodeForAccessToken_Success()
         {
             OAuthEnvironment environment = OAuthEnvironment.PRODUCTION;
-            String code = "v^1.1**********************jYw";
+            string code = "v^1.1**********************jYw";
             OAuthResponse oAuthResponse = oAuth2Api.ExchangeCodeForAccessToken(environment, code);
             Assert.NotNull(oAuthResponse);
             PrintOAuthResponse(environment, "ExchangeCodeForAccessToken", oAuthResponse);
@@ -130,7 +132,7 @@ namespace eBay.ApiClient.Auth.OAuth2
         [Fact]
         public void ExchangeCodeForAccessToken_NullEnvironment_Failure()
         {
-            String code = "v^1.1*********************MjYw";
+            string code = "v^1.1*********************MjYw";
             Assert.Throws<ArgumentException>(() => oAuth2Api.ExchangeCodeForAccessToken(null, code));
         }
 
@@ -144,7 +146,7 @@ namespace eBay.ApiClient.Auth.OAuth2
         public void GetAccessToken_Success()
         {
             OAuthEnvironment environment = OAuthEnvironment.PRODUCTION;
-            String refreshToken = "v^1.1*****************I2MA==";
+            string refreshToken = "v^1.1*****************I2MA==";
             OAuthResponse oAuthResponse = oAuth2Api.GetAccessToken(environment, refreshToken, userScopes);
             Assert.NotNull(oAuthResponse);
             PrintOAuthResponse(environment, "GetAccessToken", oAuthResponse);
@@ -172,11 +174,11 @@ namespace eBay.ApiClient.Auth.OAuth2
         }
 
         private void LoadCredentials() {
-            String path = @"../../../ebay-config-sample.yaml";
+            string path = @"../../../ebay-config-sample.json";
             CredentialUtil.Load(path);
         }
 
-        private void PrintOAuthResponse(OAuthEnvironment environment, String methodName, OAuthResponse oAuthResponse) {
+        private void PrintOAuthResponse(OAuthEnvironment environment, string methodName, OAuthResponse oAuthResponse) {
             Console.WriteLine("======================" + methodName + "======================");
             Console.WriteLine("Environment=> " + environment.ConfigIdentifier() + ", ErroMessage=> " + oAuthResponse.ErrorMessage);
             if (oAuthResponse.AccessToken != null)
@@ -195,18 +197,18 @@ namespace eBay.ApiClient.Auth.OAuth2
             UserCredential userCredential = ReadUserNamePassword(environment);
             if ("<sandbox-username>".Equals(userCredential.UserName) || "<production-username>".Equals(userCredential.UserName) || "<sandbox-user-password>".Equals(userCredential.Pwd) || "<production-user-password>".Equals(userCredential.Pwd))
             {
-                Console.WriteLine("User name and password are not specified in test-config-sample.yaml");
+                Console.WriteLine("User name and password are not specified in test-config-sample.json");
                 return;
             }
 
-            String authorizationUrl = oAuth2Api.GenerateUserAuthorizationUrl(environment, userScopes, null);
+            string authorizationUrl = oAuth2Api.GenerateUserAuthorizationUrl(environment, userScopes, null);
             Console.WriteLine("AuthorizationUrl => " + authorizationUrl);
-            String authorizationCode = GetAuthorizationCode(authorizationUrl, userCredential);
+            string authorizationCode = GetAuthorizationCode(authorizationUrl, userCredential);
             Console.WriteLine("AuthorizationCode => " + authorizationCode);
             OAuthResponse oAuthResponse = oAuth2Api.ExchangeCodeForAccessToken(environment, authorizationCode);
             Assert.NotNull(oAuthResponse);
             Assert.NotNull(oAuthResponse.RefreshToken);
-            String refreshToken = oAuthResponse.RefreshToken.Token;
+            string refreshToken = oAuthResponse.RefreshToken.Token;
             Console.WriteLine("RefreshToken=> " + refreshToken);
             oAuthResponse = oAuth2Api.GetAccessToken(environment, refreshToken, userScopes);
             Assert.NotNull(oAuthResponse);
@@ -218,39 +220,25 @@ namespace eBay.ApiClient.Auth.OAuth2
         private UserCredential ReadUserNamePassword(OAuthEnvironment environment)
         {
             UserCredential userCredential = new UserCredential();
-            YamlStream yaml = new YamlStream();
-            StreamReader streamReader = new StreamReader("../../../test-config-sample.yaml");
-            yaml.Load(streamReader);
-            var rootNode = (YamlMappingNode)yaml.Documents[0].RootNode;
-            foreach (var firstLevelNode in rootNode.Children)
-            {
-                foreach (var node in firstLevelNode.Value.AllNodes)
-                {
-                    String configEnvironment = ((YamlScalarNode)firstLevelNode.Key).Value;
-                    if ((environment.ConfigIdentifier().Equals(OAuthEnvironment.PRODUCTION.ConfigIdentifier()) && "sandbox-user".Equals(configEnvironment))
-                        || (environment.ConfigIdentifier().Equals(OAuthEnvironment.SANDBOX.ConfigIdentifier()) && "production-user".Equals(configEnvironment)))
-                    {
-                        continue;
-                    }
-                    if (node is YamlMappingNode) {
-                    foreach (var keyValuePair in ((YamlMappingNode)node).Children)
-                        {
-                            if ("username".Equals(keyValuePair.Key.ToString()))
-                            {
-                                userCredential.UserName = keyValuePair.Value.ToString();
-                            }
-                            else
-                            {
-                                userCredential.Pwd = keyValuePair.Value.ToString();
-                            }
-                        }
-                    }
-                }
-            }
+            
+            FileInfo sampleConfig = new FileInfo("../../../test-config-sample.json");
+            FileStream fs = sampleConfig.Open(FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
+            var options = new JsonSerializerOptions{PropertyNameCaseInsensitive = true};
+            var jsObj = JsonSerializer.Deserialize<Root>(fs, options);
+        if(environment.ConfigIdentifier().Equals(OAuthEnvironment.PRODUCTION.ConfigIdentifier()))
+        {
+            userCredential.UserName = jsObj.ProductionUser.Username;
+            userCredential.Pwd = jsObj.ProductionUser.Password;
+        }
+        else
+        {
+            userCredential.UserName = jsObj.SandboxUser.Username;
+            userCredential.Pwd = jsObj.SandboxUser.Password;
+        }
             return userCredential;
         }
 
-        private String GetAuthorizationCode(String authorizationUrl, UserCredential userCredential) {
+        private string GetAuthorizationCode(string authorizationUrl, UserCredential userCredential) {
 
             IWebDriver driver = new ChromeDriver("./");
 
@@ -266,7 +254,7 @@ namespace eBay.ApiClient.Auth.OAuth2
             //Wait for success page
             Thread.Sleep(2000);
 
-            String successUrl = driver.Url;
+            string successUrl = driver.Url;
 
             //Handle consent
             if(successUrl.Contains("/consents"))
@@ -278,15 +266,29 @@ namespace eBay.ApiClient.Auth.OAuth2
             }
 
             int iqs = successUrl.IndexOf('?');
-            String querystring = (iqs < successUrl.Length - 1) ? successUrl.Substring(iqs + 1) : String.Empty;
+            string querystring = (iqs < successUrl.Length - 1) ? successUrl.Substring(iqs + 1) : string.Empty;
             // Parse the query string variables into a NameValueCollection.
             NameValueCollection queryParams = HttpUtility.ParseQueryString(querystring);
-            String code = queryParams.Get("code");
+            string code = queryParams.Get("code");
             driver.Quit();
 
             return code;
 
         }
 
+    }
+    
+    public class User
+    {
+        public string Username { get; set; }
+        public string Password { get; set; }
+    }
+    public class Root
+    {
+        [JsonPropertyName("sandbox-user")]
+        public User SandboxUser { get; set; }
+
+        [JsonPropertyName("production-user")]
+        public User ProductionUser { get; set; }
     }
 }

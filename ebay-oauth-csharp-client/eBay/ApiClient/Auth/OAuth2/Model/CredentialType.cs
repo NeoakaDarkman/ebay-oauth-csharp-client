@@ -28,14 +28,14 @@ public class CredentialType
         public static readonly CredentialType REDIRECT_URI = new CredentialType(Constants.REDIRECT_URI);
 
 
-        private readonly String configIdentifier;
+        private readonly string configIdentifier;
 
-        private CredentialType(String configIdentifier) 
+        private CredentialType(string configIdentifier) 
         {
             this.configIdentifier = configIdentifier;
         }
 
-        public String ConfigIdentifier()
+        public string ConfigIdentifier()
         {
             return configIdentifier;
         }
@@ -43,7 +43,7 @@ public class CredentialType
         /*
          * Lookup CredentialType by config identifier
          */ 
-        public static CredentialType LookupByConfigIdentifier(String configIdentifier) 
+        public static CredentialType LookupByConfigIdentifier(string configIdentifier) 
         {
             if(Constants.DEV_ID.Equals(configIdentifier)) 
             {

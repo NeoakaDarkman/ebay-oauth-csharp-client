@@ -25,32 +25,32 @@ namespace eBay.ApiClient.Auth.OAuth2
     public static class Constants
     {
         //Config
-        public static readonly String DEV_ID = "devid";
-        public static readonly String APP_ID = "appid";
-        public static readonly String CERT_ID = "certid";
-        public static readonly String REDIRECT_URI = "redirecturi";
-        public static readonly String CREDENTIAL_DELIMITER = ":";
+        public static readonly string DEV_ID = "devid";
+        public static readonly string APP_ID = "appid";
+        public static readonly string CERT_ID = "certid";
+        public static readonly string REDIRECT_URI = "redirecturi";
+        public static readonly string CREDENTIAL_DELIMITER = ":";
 
         //API request headers
-        public static readonly String HEADER_AUTHORIZATION = "Authorization";
-        public static readonly String HEADER_PREFIX_BASIC = "Basic ";
-        public static readonly String HEADER_CONTENT_TYPE = "application/x-www-form-urlencoded";
+        public static readonly string HEADER_AUTHORIZATION = "Authorization";
+        public static readonly string HEADER_PREFIX_BASIC = "Basic ";
+        public static readonly string HEADER_CONTENT_TYPE = "application/x-www-form-urlencoded";
 
         //API request payload
-        public static readonly String PAYLOAD_GRANT_TYPE = "grant_type";
-        public static readonly String PAYLOAD_CLIENT_ID = "client_id";
-        public static readonly String PAYLOAD_RESPONSE_TYPE = "response_type";
-        public static readonly String PAYLOAD_REDIRECT_URI = "redirect_uri";
-        public static readonly String PAYLOAD_SCOPE = "scope";
-        public static readonly String PAYLOAD_STATE = "state";
-        public static readonly String PAYLOAD_CODE = "code";
-        public static readonly String PAYLOAD_REFRESH_TOKEN = "refresh_token";
-        public static readonly String PAYLOAD_VALUE_CLIENT_CREDENTIALS = "client_credentials";
-        public static readonly String PAYLOAD_VALUE_CODE = "code";
-        public static readonly String PAYLOAD_VALUE_AUTHORIZATION_CODE = "authorization_code";
-        public static readonly String PAYLOAD_VALUE_REFRESH_TOKEN = "refresh_token";
-        public static readonly String PAYLOAD_PARAM_DELIMITER = "&";
-        public static readonly String PAYLOAD_VALUE_DELIMITER = "=";
+        public static readonly string PAYLOAD_GRANT_TYPE = "grant_type";
+        public static readonly string PAYLOAD_CLIENT_ID = "client_id";
+        public static readonly string PAYLOAD_RESPONSE_TYPE = "response_type";
+        public static readonly string PAYLOAD_REDIRECT_URI = "redirect_uri";
+        public static readonly string PAYLOAD_SCOPE = "scope";
+        public static readonly string PAYLOAD_STATE = "state";
+        public static readonly string PAYLOAD_CODE = "code";
+        public static readonly string PAYLOAD_REFRESH_TOKEN = "refresh_token";
+        public static readonly string PAYLOAD_VALUE_CLIENT_CREDENTIALS = "client_credentials";
+        public static readonly string PAYLOAD_VALUE_CODE = "code";
+        public static readonly string PAYLOAD_VALUE_AUTHORIZATION_CODE = "authorization_code";
+        public static readonly string PAYLOAD_VALUE_REFRESH_TOKEN = "refresh_token";
+        public static readonly string PAYLOAD_PARAM_DELIMITER = "&";
+        public static readonly string PAYLOAD_VALUE_DELIMITER = "=";
 
 
     }

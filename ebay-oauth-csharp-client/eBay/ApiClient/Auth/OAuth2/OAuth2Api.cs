@@ -19,22 +19,25 @@
 using System;
 using System.Collections.Generic;
 using eBay.ApiClient.Auth.OAuth2.Model;
-using RestSharp;
 using System.Net;
-using Newtonsoft.Json;
+using System.Net.Http;
 using System.Text;
-using log4net;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace eBay.ApiClient.Auth.OAuth2
 {
     public class OAuth2Api
     {
-        private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly ILogger log = LoggerFactory.Create(builder =>
+        {
+            builder.AddConsole();
+        }).CreateLogger<OAuth2Api>();
         private static AppTokenCache appTokenCache = new AppTokenCache();
 
         private class AppTokenCache
         {
-            private Dictionary<String, AppTokenCacheModel> envAppTokenCache = new Dictionary<String, AppTokenCacheModel>();
+            private Dictionary<string, AppTokenCacheModel> envAppTokenCache = new Dictionary<string, AppTokenCacheModel>();
 
             public void UpdateValue(OAuthEnvironment environment, OAuthResponse oAuthResponse, DateTime expiresAt)
             {
@@ -60,12 +63,9 @@ namespace eBay.ApiClient.Auth.OAuth2
 
                 AppTokenCacheModel appTokenCacheModel = this.envAppTokenCache.TryGetValue(environment.ConfigIdentifier(), out AppTokenCacheModel value) ? value : null;
 
-                if (appTokenCacheModel != null)
-                {
-                    if ((appTokenCacheModel.OAuthResponse != null && appTokenCacheModel.OAuthResponse.ErrorMessage != null)
-                        || (DateTime.Now.CompareTo(appTokenCacheModel.ExpiresAt) < 0))
-                        return appTokenCacheModel.OAuthResponse;
-                }
+                if (appTokenCacheModel != null && ((appTokenCacheModel.OAuthResponse?.ErrorMessage != null)
+                                                   || (DateTime.Now.CompareTo(appTokenCacheModel.ExpiresAt) < 0)))
+                    return appTokenCacheModel.OAuthResponse;
                 //Since the value is expired, return null
                 return null;
             }
@@ -75,7 +75,7 @@ namespace eBay.ApiClient.Auth.OAuth2
          * Use this operation to get an OAuth access token using a client credentials grant. 
          * The access token retrieved from this process is called an Application access token. 
          */
-        public OAuthResponse GetApplicationToken(OAuthEnvironment environment, IList<String> scopes)
+        public OAuthResponse GetApplicationToken(OAuthEnvironment environment, IList<string> scopes)
         {
 
             //Validate request
@@ -86,27 +86,27 @@ namespace eBay.ApiClient.Auth.OAuth2
             if (appTokenCache != null)
             {
                 oAuthResponse = appTokenCache.GetValue(environment);
-                if (oAuthResponse != null && oAuthResponse.AccessToken != null && oAuthResponse.AccessToken.Token != null)
+                if (oAuthResponse?.AccessToken?.Token != null)
                 {
-                    log.Info("Returning token from cache for " + environment.ConfigIdentifier());
+                    log.LogInformation("Returning token from cache for " + environment.ConfigIdentifier());
                     return oAuthResponse;
                 }
             }
 
             //App token not in cache, fetch it and set into cache
-            String formattedScopes = OAuth2Util.FormatScopesForRequest(scopes);
+            string formattedScopes = OAuth2Util.FormatScopesForRequest(scopes);
 
             //Prepare request payload
-            Dictionary<String, String> payloadParams = new Dictionary<string, string>
+            Dictionary<string, string> payloadParams = new Dictionary<string, string>
             {
                 { Constants.PAYLOAD_GRANT_TYPE, Constants.PAYLOAD_VALUE_CLIENT_CREDENTIALS },
                 {Constants.PAYLOAD_SCOPE, formattedScopes}
             };
-            String requestPayload = OAuth2Util.CreateRequestPayload(payloadParams);
+            string requestPayload = OAuth2Util.CreateRequestPayload(payloadParams);
 
             oAuthResponse = FetchToken(environment, requestPayload, TokenType.APPLICATION);
             //Update value in cache
-            if(oAuthResponse != null && oAuthResponse.AccessToken != null) 
+            if(oAuthResponse?.AccessToken != null) 
             {
                 appTokenCache.UpdateValue(environment, oAuthResponse, oAuthResponse.AccessToken.ExpiresOn);
             }
@@ -119,7 +119,7 @@ namespace eBay.ApiClient.Auth.OAuth2
          * Once the user authenticates and approves the consent, the callback need to be 
          * captured by the redirect URL setup by the app 
          */
-        public String GenerateUserAuthorizationUrl(OAuthEnvironment environment, IList<String> scopes, String state)
+        public string GenerateUserAuthorizationUrl(OAuthEnvironment environment, IList<string> scopes, string state)
         {
 
             //Validate request
@@ -129,14 +129,14 @@ namespace eBay.ApiClient.Auth.OAuth2
             CredentialUtil.Credentials credentials = GetCredentials(environment);
 
             //Format scopes
-            String formattedScopes = OAuth2Util.FormatScopesForRequest(scopes);
+            string formattedScopes = OAuth2Util.FormatScopesForRequest(scopes);
 
             //Prepare URL
             StringBuilder sb = new StringBuilder();
             sb.Append(environment.WebEndpoint()).Append("?");
 
             //Prepare request payload
-            Dictionary<String, String> queryParams = new Dictionary<string, string>
+            Dictionary<string, string> queryParams = new Dictionary<string, string>
             {
                 { Constants.PAYLOAD_CLIENT_ID, credentials.Get(CredentialType.APP_ID) },
                 {Constants.PAYLOAD_RESPONSE_TYPE, Constants.PAYLOAD_VALUE_CODE},
@@ -151,14 +151,14 @@ namespace eBay.ApiClient.Auth.OAuth2
 
             sb.Append(OAuth2Util.CreateRequestPayload(queryParams));
 
-            log.Debug("Authorization url " + sb);
+            log.LogDebug("Authorization url " + sb);
             return sb.ToString();
         }
 
         /*
          * Use this operation to get the refresh and access tokens.
          */
-        public OAuthResponse ExchangeCodeForAccessToken(OAuthEnvironment environment, String code)
+        public OAuthResponse ExchangeCodeForAccessToken(OAuthEnvironment environment, string code)
         {
 
             //Validate request
@@ -169,13 +169,13 @@ namespace eBay.ApiClient.Auth.OAuth2
             CredentialUtil.Credentials credentials = GetCredentials(environment);
 
             // Create request payload
-            Dictionary<String, String> payloadParams = new Dictionary<string, string>
+            Dictionary<string, string> payloadParams = new Dictionary<string, string>
             {
                 { Constants.PAYLOAD_GRANT_TYPE, Constants.PAYLOAD_VALUE_AUTHORIZATION_CODE },
                 {Constants.PAYLOAD_REDIRECT_URI, credentials.Get(CredentialType.REDIRECT_URI)},
                 {Constants.PAYLOAD_CODE, code}
             };
-            String requestPayload = OAuth2Util.CreateRequestPayload(payloadParams);
+            string requestPayload = OAuth2Util.CreateRequestPayload(payloadParams);
            
             OAuthResponse oAuthResponse = FetchToken(environment, requestPayload, TokenType.USER);
             return oAuthResponse;
@@ -184,7 +184,7 @@ namespace eBay.ApiClient.Auth.OAuth2
         /*
          * Use this operation to update the access token if it has expired
          */
-        public OAuthResponse GetAccessToken(OAuthEnvironment environment, String refreshToken, IList<String> scopes)
+        public OAuthResponse GetAccessToken(OAuthEnvironment environment, string refreshToken, IList<string> scopes)
         {
 
             //Validate request
@@ -195,28 +195,28 @@ namespace eBay.ApiClient.Auth.OAuth2
             CredentialUtil.Credentials credentials = GetCredentials(environment);
 
             //Format scopes
-            String formattedScopes = OAuth2Util.FormatScopesForRequest(scopes);
+            string formattedScopes = OAuth2Util.FormatScopesForRequest(scopes);
 
             // Create request payload
-            Dictionary<String, String> payloadParams = new Dictionary<string, string>
+            Dictionary<string, string> payloadParams = new Dictionary<string, string>
             {
                 { Constants.PAYLOAD_GRANT_TYPE, Constants.PAYLOAD_VALUE_REFRESH_TOKEN },
                 {Constants.PAYLOAD_REFRESH_TOKEN, refreshToken},
                 {Constants.PAYLOAD_SCOPE, formattedScopes}
             };
-            String requestPayload = OAuth2Util.CreateRequestPayload(payloadParams);
+            string requestPayload = OAuth2Util.CreateRequestPayload(payloadParams);
 
             OAuthResponse oAuthResponse = FetchToken(environment, requestPayload, TokenType.USER);
             return oAuthResponse;
         }
 
-        private void ValidateEnvironmentAndScopes(OAuthEnvironment environment, IList<String> scopes)
+        private void ValidateEnvironmentAndScopes(OAuthEnvironment environment, IList<string> scopes)
         {
             ValidateInput("Environment", environment);
             ValidateScopes(scopes);
         }
 
-        private void ValidateInput(String key, Object value)
+        private void ValidateInput(string key, object value)
         {
             if (value == null)
             {
@@ -224,7 +224,7 @@ namespace eBay.ApiClient.Auth.OAuth2
             }
         }
 
-        private void ValidateScopes(IList<String> scopes)
+        private void ValidateScopes(IList<string> scopes)
         {
             if (scopes == null || scopes.Count == 0)
             {
@@ -232,29 +232,30 @@ namespace eBay.ApiClient.Auth.OAuth2
             }
         }
 
-        private OAuthResponse FetchToken(OAuthEnvironment environment, String requestPayload, TokenType tokenType)
+        private OAuthResponse FetchToken(OAuthEnvironment environment, string requestPayload, TokenType tokenType)
         {
             //Get credentials
             CredentialUtil.Credentials credentials = GetCredentials(environment);
 
             //Initialize client
-            RestClient client = new RestClient
+            var client = new HttpClient
             {
-                BaseUrl = new Uri(environment.ApiEndpoint())
+                BaseAddress = new Uri(environment.ApiEndpoint())
             };
 
             //Create request
-            RestRequest request = new RestRequest(Method.POST);
+            var request = new HttpRequestMessage(HttpMethod.Post, client.BaseAddress);
 
             //Add headers
-            request.AddHeader(Constants.HEADER_AUTHORIZATION, OAuth2Util.CreateAuthorizationHeader(credentials));
+            request.Headers.Add(Constants.HEADER_AUTHORIZATION, OAuth2Util.CreateAuthorizationHeader(credentials));
 
             //Set request payload
-            request.AddParameter(Constants.HEADER_CONTENT_TYPE, requestPayload, ParameterType.RequestBody);
+            request.Content = new StringContent(requestPayload, Encoding.UTF8, Constants.HEADER_CONTENT_TYPE);
 
 
             //Call the API
-            IRestResponse response = client.Execute(request);
+            var responseMessage = client.SendAsync(request);
+            var response = responseMessage.Result;
 
             //Parse response
             OAuthResponse oAuthResponse = HandleApiResponse(response, tokenType);
@@ -274,17 +275,17 @@ namespace eBay.ApiClient.Auth.OAuth2
         }
 
 
-        private OAuthResponse HandleApiResponse(IRestResponse response, TokenType tokenType)
+        private OAuthResponse HandleApiResponse(HttpResponseMessage response, TokenType tokenType)
         {
             OAuthResponse oAuthResponse = new OAuthResponse();
             if (response.StatusCode != HttpStatusCode.OK)
             {
-                oAuthResponse.ErrorMessage = response.Content;
-                log.Error("Error in fetching the token. Error:" + oAuthResponse.ErrorMessage);
+                oAuthResponse.ErrorMessage = response.Content.ToString();
+                log.LogError("Error in fetching the token. Error:" + oAuthResponse.ErrorMessage);
             }
             else
             {
-                OAuthApiResponse apiResponse = JsonConvert.DeserializeObject<OAuthApiResponse>(response.Content);
+                OAuthApiResponse apiResponse = JsonSerializer.Deserialize<OAuthApiResponse>(response.Content.ReadAsStreamAsync().Result);
 
                 //Set AccessToken
                 OAuthToken accessToken = new OAuthToken
@@ -306,7 +307,7 @@ namespace eBay.ApiClient.Auth.OAuth2
                     oAuthResponse.RefreshToken = refreshToken;
                 }
             }
-            log.Info("Fetched the token successfully from API");
+            log.LogInformation("Fetched the token successfully from API");
             return oAuthResponse;
         }
     }

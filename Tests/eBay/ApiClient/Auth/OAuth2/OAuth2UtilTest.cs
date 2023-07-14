@@ -30,44 +30,44 @@ namespace eBay.ApiClient.Auth.OAuth2
         [Fact]
         public void FormatScopesForRequest_Success()
         {
-            IList<String> scopes = new List<String>()
+            IList<string> scopes = new List<string>()
             {
                 "https://api.ebay.com/oauth/api_scope/buy.marketing",
                 "https://api.ebay.com/oauth/api_scope"
             };
 
-            String formattedScopes = OAuth2Util.FormatScopesForRequest(scopes);
+            string formattedScopes = OAuth2Util.FormatScopesForRequest(scopes);
             Assert.Equal("https://api.ebay.com/oauth/api_scope/buy.marketing+https://api.ebay.com/oauth/api_scope", formattedScopes);
         }
 
         [Fact]
         public void FormatScopesForRequest_NullScopes()
         {
-            String formattedScopes = OAuth2Util.FormatScopesForRequest(null);
+            string formattedScopes = OAuth2Util.FormatScopesForRequest(null);
             Assert.Null(formattedScopes);
         }
 
         [Fact]
         public void CreateAuthorizationHeader_Success() {
-            String path = @"../../../ebay-config-sample.yaml";
+            string path = @"../../../ebay-config-sample.json";
             CredentialUtil.Load(path);
             CredentialUtil.Credentials credentials = CredentialUtil.GetCredentials(OAuthEnvironment.PRODUCTION);
-            String authorizationHeader = OAuth2Util.CreateAuthorizationHeader(credentials);
+            string authorizationHeader = OAuth2Util.CreateAuthorizationHeader(credentials);
             Assert.NotNull(authorizationHeader);
-            Boolean headerStartsWithBasic = authorizationHeader.StartsWith("Basic ", StringComparison.Ordinal);
+            bool headerStartsWithBasic = authorizationHeader.StartsWith("Basic ", StringComparison.Ordinal);
             Assert.True(headerStartsWithBasic);
         }
 
         [Fact]
         public void CreateRequestPayload_Success()
         {
-            Dictionary<String, String> payloadParams = new Dictionary<string, string>
+            Dictionary<string, string> payloadParams = new Dictionary<string, string>
             {
                 { Constants.PAYLOAD_GRANT_TYPE, Constants.PAYLOAD_VALUE_AUTHORIZATION_CODE },
                 {Constants.PAYLOAD_REDIRECT_URI, "TestURI" },
                 {Constants.PAYLOAD_CODE, "TestCode"}
             };
-            String requestPayload = OAuth2Util.CreateRequestPayload(payloadParams);
+            string requestPayload = OAuth2Util.CreateRequestPayload(payloadParams);
             Assert.NotNull(requestPayload);
             Assert.Equal("grant_type=authorization_code&redirect_uri=TestURI&code=TestCode", requestPayload);
         }

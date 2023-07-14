@@ -29,13 +29,13 @@ namespace eBay.ApiClient.Auth.OAuth2
         /*
          * Format scopes for request
          */
-        public static String FormatScopesForRequest(IList<String> scopes) {
-            String scopesForRequest = null;
+        public static string FormatScopesForRequest(IList<string> scopes) {
+            string scopesForRequest = null;
             if(scopes == null || scopes.Count ==0) {
                 return scopesForRequest;
             }
 
-            foreach(String scope in scopes) {
+            foreach(string scope in scopes) {
                 scopesForRequest = scopesForRequest == null ? scope : scopesForRequest + "+" + scope;
             }
             return scopesForRequest;
@@ -44,7 +44,7 @@ namespace eBay.ApiClient.Auth.OAuth2
         /*
          * Create Base64 encoded Authorization header value
          */
-        public static String CreateAuthorizationHeader(CredentialUtil.Credentials credentials) {
+        public static string CreateAuthorizationHeader(CredentialUtil.Credentials credentials) {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append(credentials.Get(CredentialType.APP_ID)).Append(Constants.CREDENTIAL_DELIMITER);
             stringBuilder.Append(credentials.Get(CredentialType.CERT_ID));
@@ -56,10 +56,10 @@ namespace eBay.ApiClient.Auth.OAuth2
         /*
          * Create request payload for input parameters and values
          */
-        public static String CreateRequestPayload(Dictionary<String, String> payloadParams)
+        public static string CreateRequestPayload(Dictionary<string, string> payloadParams)
         {
             StringBuilder sb = new StringBuilder();
-            foreach (KeyValuePair<String, String> entry in payloadParams)
+            foreach (KeyValuePair<string, string> entry in payloadParams)
             {
                 if (sb.Length > 0)
                 {

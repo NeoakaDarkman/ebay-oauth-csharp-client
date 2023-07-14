@@ -20,34 +20,48 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using eBay.ApiClient.Auth.OAuth2.Model;
-using YamlDotNet.RepresentationModel;
-using log4net;
 using System.Collections.Concurrent;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace eBay.ApiClient.Auth.OAuth2
 {
-    public static class CredentialUtil {
-
-        private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-        static readonly ConcurrentDictionary<String, Credentials> envCredentials = new ConcurrentDictionary<String, Credentials>();
+    public static class CredentialUtil
+    {
+        private static ILogger log = LoggerFactory.Create(builder =>
+        {
+            builder.AddConsole();
+        }).CreateLogger<Credentials>();
+        static readonly ConcurrentDictionary<string, Credentials> envCredentials = new ConcurrentDictionary<string, Credentials>();
 
         public class Credentials {
-            private readonly Dictionary<CredentialType, String> credentialTypeLookup = new Dictionary<CredentialType, String>();
+            private readonly Dictionary<CredentialType, string> credentialTypeLookup = new Dictionary<CredentialType, string>();
 
-            public Credentials(YamlMappingNode keyValuePairs)
+            public Credentials(ConfigCredential credential)
             {
-
-                foreach (var keyValuePair in keyValuePairs.Children)
+                CredentialType credentialType = CredentialType.LookupByConfigIdentifier(nameof(credential.AppId).ToLower());
+                if (credentialType != null)
                 {
-                    CredentialType credentialType = CredentialType.LookupByConfigIdentifier(keyValuePair.Key.ToString());
-                    if (credentialType != null)
-                    {
-                        credentialTypeLookup.Add(credentialType, keyValuePair.Value.ToString());
-                    }
+                    credentialTypeLookup.Add(credentialType, credential.AppId);
+                }
+                credentialType = CredentialType.LookupByConfigIdentifier(nameof(credential.CertId).ToLower());
+                if (credentialType != null)
+                {
+                    credentialTypeLookup.Add(credentialType, credential.CertId);
+                }
+                credentialType = CredentialType.LookupByConfigIdentifier(nameof(credential.DevId).ToLower());
+                if (credentialType != null)
+                {
+                    credentialTypeLookup.Add(credentialType, credential.DevId);
+                }
+                credentialType = CredentialType.LookupByConfigIdentifier(nameof(credential.RedirectUri).ToLower());
+                if (credentialType != null)
+                {
+                    credentialTypeLookup.Add(credentialType, credential.RedirectUri);
                 }
             }
 
-            public String Get(CredentialType credentialType)
+            public string Get(CredentialType credentialType)
             {
                 return credentialTypeLookup[credentialType];
             }
@@ -56,45 +70,30 @@ namespace eBay.ApiClient.Auth.OAuth2
         /*
          * Loading StreamReader
          */
-        public static void Load(String yamlFile)
+        public static void Load(string jsonFile)
         {
             //Stream the input file
-            StreamReader streamReader = new StreamReader(yamlFile);
-            Load(streamReader);
+            var fi = new FileInfo(jsonFile);
+            var fs = fi.Open(FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
+            Load(fs);
         }
 
         /*
          * Loading YAML file
          */
-        public static void Load(StreamReader streamReader)
+        public static void Load(Stream stream)
         {
            
-            //Load the stream
-            YamlStream yaml = new YamlStream();
-            yaml.Load(streamReader);
+            var options = new JsonSerializerOptions{PropertyNameCaseInsensitive = true};
+            var jsObj = JsonSerializer.Deserialize<JsonConfig>(stream, options);
 
-            // Parse the stream
-            var rootNode = (YamlMappingNode)yaml.Documents[0].RootNode;
-            foreach (var firstLevelNode in rootNode.Children)
+            foreach (var cc in jsObj.Credentials)
             {
-                OAuthEnvironment environment = OAuthEnvironment.LookupByConfigIdentifier(((YamlScalarNode)firstLevelNode.Key).Value);
-                if (environment == null)
-                {
-                    continue;
-                }
-
-                foreach (var node in firstLevelNode.Value.AllNodes)
-                {
-                    if (node is YamlMappingNode)
-                    {
-                        Credentials credentials = new Credentials((YamlMappingNode)node);
-                        envCredentials[environment.ConfigIdentifier()] = credentials;
-                    }
-
-                }
-
+                OAuthEnvironment environment = OAuthEnvironment.LookupByConfigIdentifier(cc.Environment);
+                Credentials credentials = new Credentials(cc);
+                envCredentials[environment.ConfigIdentifier()] = credentials;
             }
-            log.Info("Loaded configuration for eBay oAuth Token");
+            log.LogInformation("Loaded configuration for eBay oAuth Token");
 
         }
 

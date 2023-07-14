@@ -21,7 +21,7 @@ namespace eBay.ApiClient.Auth.OAuth2.Model
 {
     public class OAuthToken
     {
-        public String Token { get; set; }
+        public string Token { get; set; }
         public DateTime ExpiresOn { get; set; }
         public TokenType TokenType { get; set; }
     }

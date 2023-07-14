@@ -21,7 +21,7 @@ namespace eBay.ApiClient.Auth.OAuth2.Model
 {
     public class UserCredential
     {
-        public String UserName { get; set; }
-        public String Pwd { get; set; }
+        public string UserName { get; set; }
+        public string Pwd { get; set; }
     }
 }

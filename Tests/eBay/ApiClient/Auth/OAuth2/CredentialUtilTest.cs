@@ -28,7 +28,7 @@ namespace eBay.ApiClient.Auth.OAuth2
         [Fact]
         public void GetCredentials_Success()
         {
-            String path = @"../../../ebay-config-sample.yaml";
+            string path = @"../../../ebay-config-sample.json";
             CredentialUtil.Load(path);
             CredentialUtil.Credentials credentials = CredentialUtil.GetCredentials(OAuthEnvironment.PRODUCTION);
             Assert.NotNull(credentials);
